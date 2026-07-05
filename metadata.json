@@ -1,0 +1,6 @@
+{
+  "name": "Raiz & Madeira",
+  "description": "Catálogo online de produtos artesanais em madeira pinus para deixar sua casa com cara de lar.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
