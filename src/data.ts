@@ -1,10 +1,10 @@
 import heroImg from "./assets/images/hero_table_1783273603095.jpg";
 import portaOvosImg from "./assets/images/porta_ovos_real_1783277387313.jpg";
-import boleiraImg from "./assets/images/boleira_1783273630684.jpg";
+import boleiraImg from "./assets/images/boleira_1783273630684.jpeg";
 import portaXicarasImg from "./assets/images/porta_xicaras_1783273669257.jpg";
 import sapateiraImg from "./assets/images/sapateira_1783273642801.jpg";
 import suporteCoadorImg from "./assets/images/suporte_coador_1783273655461.jpg";
-import portaGuardanapoImg from "./assets/images/porta_guardanapo_1783273681612.jpg";
+import portaGuardanapoImg from "./assets/images/porta_guardanapo_1783273681612.jpeg";
 import prateleiraMultUsoImg from "./assets/images/prateleira_mult_uso_1783273696566.jpg";
 import portaRetratoImg from "./assets/images/porta_retrato_1783273709817.jpg";
 import paozeiraImg from "./assets/images/paozeira_1783273725147.jpg";
@@ -25,11 +25,11 @@ export const PRODUCTS: Product[] = [
     id: "porta-ovos",
     name: "Porta ovos",
     price: 35.00,
-    description: "Lindo organizador de ovos feito em madeira pinus, com acabamento liso e natural. Comporta até 12 ovos de forma elegante e segura. Acompanha uma charmosa tag de coração que dá aquele toque rústico e artesanal irresistível à sua cozinha.",
+    description: "Lindo organizador de ovos feito em madeira pinus, com acabamento liso e natural. Comporta até 24 ovos de forma elegante e segura. Acompanha uma charmosa tag de coração que dá aquele toque rústico e artesanal irresistível à sua cozinha.",
     category: "Cozinha",
     image: portaOvosImg,
-    dimensions: "24cm x 12cm x 15cm",
-    features: ["Capacidade para 12 ovos", "Madeira pinus maciça", "Acompanha tag de coração", "Acabamento atóxico"]
+    dimensions: "18,5cm x 27cm x 18,5cm",
+    features: ["Capacidade para 24 ovos", "Madeira pinus maciça", "Acompanha tag de coração", "Acabamento atóxico"]
   },
   {
     id: "boleira",
@@ -38,7 +38,7 @@ export const PRODUCTS: Product[] = [
     description: "Boleira de madeira pinus com base torneada de alta qualidade. Perfeita para servir bolos, tortas e pães de queijo fresquinhos, trazendo o clima acolhedor do café da tarde de fazenda diretamente para a sua mesa.",
     category: "Servir",
     image: boleiraImg,
-    dimensions: "28cm diâmetro x 12cm altura",
+    dimensions: "30cm diâmetro x 14cm altura",
     features: ["Design rústico e sofisticado", "Superfície lixada e selada", "Estabilidade garantida", "Fácil de higienizar"]
   },
   {
@@ -48,8 +48,8 @@ export const PRODUCTS: Product[] = [
     description: "Suporte vertical organizador para canecas e xícaras, super prático e decorativo. Mantém suas canecas favoritas sempre organizadas e ao alcance das mãos na sua bancada ou cantinho especial de café.",
     category: "Café & Chá",
     image: portaXicarasImg,
-    dimensions: "15cm x 15cm x 35cm",
-    features: ["Comporta até 6 xícaras grandes", "Gancho resistente de madeira", "Base estável antiderrapante", "Otimização de espaço"]
+    dimensions: "9cm x 25cm",
+    features: ["Comporta até 6 xícaras pequenas", "Gancho resistente de madeira", "Base estável antiderrapante", "Otimização de espaço"]
   },
   {
     id: "sapateira",
@@ -58,7 +58,7 @@ export const PRODUCTS: Product[] = [
     description: "Sapateira modular compacta com 3 prateleiras em madeira pinus maciça. Ideal para organizar sapatos no hall de entrada, quarto ou closet, mantendo o ambiente sempre limpo, arejado e incrivelmente harmônico.",
     category: "Organização",
     image: sapateiraImg,
-    dimensions: "50cm largura x 26cm profundidade x 45cm altura",
+    dimensions: "50cm largura x 26cm profundidade x 50cm altura",
     features: ["Três andares espaçosos", "Design minimalista e leve", "Fácil montagem e transporte", "Excelente ventilação para calçados"]
   },
   {
@@ -68,7 +68,7 @@ export const PRODUCTS: Product[] = [
     description: "Tradicional suporte de coador de café ('mancebo') feito em madeira pinus rústica. Permite passar aquele cafezinho fresco passado na hora de forma tradicional diretamente na sua xícara favorita.",
     category: "Café & Chá",
     image: suporteCoadorImg,
-    dimensions: "12cm x 12cm x 28cm",
+    dimensions: "18,5cm x 12,5cm x 12,5cm",
     features: ["Madeira pinus tratada", "Inclui mancebo estável", "Ideal para café individual", "Fácil de limpar"]
   },
   {
