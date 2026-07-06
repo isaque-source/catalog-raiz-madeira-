@@ -44,7 +44,7 @@ export const PRODUCTS: Product[] = [
   {
     id: "porta-xicaras",
     name: "Porta xícaras",
-    price: 30.00,
+    price: 20.00,
     description: "Suporte vertical organizador para canecas e xícaras, super prático e decorativo. Mantém suas canecas favoritas sempre organizadas e ao alcance das mãos na sua bancada ou cantinho especial de café.",
     category: "Café & Chá",
     image: portaXicarasImg,

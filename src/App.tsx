@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Search, ShoppingBag, X, Plus, Minus, Trash2, Heart, 
   Check, Instagram, MapPin, ArrowRight, Filter, ArrowUpDown, 
-  MessageCircle, Info, Sparkles, AlertCircle
+  MessageCircle, Info, Sparkles, AlertCircle, ArrowLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PRODUCTS, HERO_IMAGE, PHONE_NUMBER, INSTAGRAM_HANDLE, INSTAGRAM_URL, ADDRESS_REPRESENTATION, Product } from "./data";
@@ -30,6 +30,11 @@ export default function App() {
   const [customerName, setCustomerName] = useState("");
   const [deliveryOption, setDeliveryOption] = useState<"retirada" | "entrega">("retirada");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [houseNumber, setHouseNumber] = useState("");
+  const [complement, setComplement] = useState("");
+  const [cep, setCep] = useState("");
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState<string | null>(null);
 
   // Favorites state
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -110,6 +115,48 @@ export default function App() {
     showToast("Item removido do carrinho.");
   };
 
+  const handleCepSearch = async (cepValue: string) => {
+    const cleanedCep = cepValue.replace(/\D/g, "");
+    if (cleanedCep.length !== 8) {
+      setCepError("CEP inválido. Deve conter 8 dígitos.");
+      return;
+    }
+    
+    setCepLoading(true);
+    setCepError(null);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanedCep}/json/`);
+      const data = await response.json();
+      if (data.erro) {
+        setCepError("CEP não encontrado.");
+      } else {
+        const autoAddress = `${data.logradouro || ""}, ${data.bairro || ""}, ${data.localidade || ""} - ${data.uf || ""}`;
+        setDeliveryAddress(autoAddress || "");
+        showToast("Endereço preenchido automaticamente! 📍");
+      }
+    } catch (err) {
+      setCepError("Erro ao buscar o CEP. Tente digitar manualmente.");
+    } finally {
+      setCepLoading(false);
+    }
+  };
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 8) value = value.slice(0, 8);
+    
+    let formatted = value;
+    if (value.length > 5) {
+      formatted = `${value.slice(0, 5)}-${value.slice(5)}`;
+    }
+    setCep(formatted);
+    setCepError(null);
+
+    if (value.length === 8) {
+      handleCepSearch(value);
+    }
+  };
+
   // Get filtered and sorted products
   const categories = ["Todos", ...Array.from(new Set(PRODUCTS.map(p => p.category)))];
 
@@ -139,10 +186,21 @@ export default function App() {
     
     msg += `\n*Valor Total do Pedido:* R$ ${cartTotal.toFixed(2).replace(".", ",")}\n\n`;
     msg += `*Nome do Comprador:* ${customerName || "Não informado"}\n`;
-    msg += `*Forma de Entrega:* ${deliveryOption === "entrega" ? "🚚 Entrega em SP" : "🏪 Retirada no Ateliê"}\n`;
+    msg += `*Forma de Entrega:* ${deliveryOption === "entrega" ? "🚚 Entrega " : "🏪 Retirada no Ateliê"}\n`;
     
     if (deliveryOption === "entrega" && deliveryAddress) {
-      msg += `*Endereço de Entrega:* ${deliveryAddress}\n`;
+      if (cep) {
+        msg += `*CEP:* ${cep}\n`;
+      }
+      let fullAddr = deliveryAddress;
+      if (houseNumber) {
+        fullAddr += `, Nº ${houseNumber}`;
+      }
+      if (complement) {
+        fullAddr += ` (${complement})`;
+      }
+      msg += `*Endereço de Entrega:* ${fullAddr}\n`;
+      msg += `*(Observação: Valor de entrega a combinar/à parte)*\n`;
     }
     
     msg += `\nEnviado através da Loja Online Oficial da Raiz & Madeira.`;
@@ -170,38 +228,38 @@ export default function App() {
       </AnimatePresence>
 
       {/* Elegant Header Area (Matches cover brand aesthetic) */}
-      <header className="border-b border-brand-accent/15 py-8 px-4 bg-brand-light/40 backdrop-blur-md sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-3">
-              <span className="text-xs uppercase tracking-[0.3em] text-brand-accent font-medium">Deixando sua casa</span>
+      <header className="border-b border-brand-accent/15 py-4 md:py-8 px-4 bg-brand-light/40 backdrop-blur-md sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-4">
+          <div className="text-left">
+            <div className="hidden sm:flex items-center gap-3">
+              <span className="text-[10px] uppercase tracking-[0.3em] text-brand-accent font-medium">Deixando sua casa</span>
             </div>
-            <h1 className="font-serif text-4xl md:text-5xl font-extrabold tracking-tight mt-1 text-brand-dark flex items-baseline justify-center md:justify-start gap-1">
-              RAIZ <span className="font-sans text-2xl md:text-3xl text-brand-accent font-light">&</span> MADEIRA
+            <h1 className="font-serif text-xl sm:text-2xl md:text-5xl font-extrabold tracking-tight mt-0.5 text-brand-dark flex items-baseline gap-1">
+              RAIZ <span className="font-sans text-sm sm:text-base md:text-3xl text-brand-accent font-light">&</span> MADEIRA
             </h1>
-            <p className="text-xs uppercase tracking-[0.25em] text-brand-accent/95 font-semibold mt-1">
+            <p className="text-[9px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.25em] text-brand-accent/95 font-semibold -mt-0.5 sm:mt-0.5">
               com cara de lar
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {/* Favorites Count Indicator */}
             {favorites.length > 0 && (
-              <div className="flex items-center gap-1.5 text-xs bg-brand-light px-3 py-2 rounded-full border border-brand-accent/10">
-                <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
-                <span className="font-medium">{favorites.length} salvos</span>
+              <div className="flex items-center gap-1 bg-brand-light px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full border border-brand-accent/10">
+                <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" />
+                <span className="font-medium text-[11px] sm:text-xs">{favorites.length} <span className="hidden xs:inline">salvos</span></span>
               </div>
             )}
 
             {/* Shopping Bag trigger */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative bg-brand-dark hover:bg-brand-accent text-brand-light p-3.5 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center cursor-pointer group"
+              className="relative bg-brand-dark hover:bg-brand-accent text-brand-light p-2.5 sm:p-3.5 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center cursor-pointer group"
               id="cart-trigger-button"
             >
-              <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
               {cartTotalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-brand-green text-brand-light text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-brand-green text-brand-light text-[10px] sm:text-xs font-bold w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center animate-pulse">
                   {cartTotalItems}
                 </span>
               )}
@@ -331,10 +389,10 @@ export default function App() {
         </div>
 
         {/* Toolbar: Search, Category Filters, Sorting */}
-        <div className="bg-brand-light/90 backdrop-blur-sm p-5 rounded-2xl border border-brand-accent/10 shadow-md flex flex-col gap-5 mb-8">
+        <div className="bg-brand-light/90 backdrop-blur-sm p-4 md:p-5 rounded-2xl border border-brand-accent/10 shadow-md flex flex-col gap-4 md:gap-5 mb-8">
           
           {/* Top row: Search and Sort */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-center justify-between">
             {/* Search Input */}
             <div className="relative w-full md:max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-dark/50" />
@@ -343,7 +401,7 @@ export default function App() {
                 placeholder="Buscar produtos pelo nome..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white text-brand-dark text-sm pl-10 pr-4 py-3 rounded-xl border border-brand-accent/20 focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent transition-all"
+                className="w-full bg-white text-brand-dark text-sm pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-brand-accent/20 focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent transition-all"
               />
               {searchQuery && (
                 <button 
@@ -357,11 +415,11 @@ export default function App() {
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2 w-full md:w-auto">
-              <ArrowUpDown className="w-4 h-4 text-brand-accent" />
+              <ArrowUpDown className="w-4 h-4 text-brand-accent shrink-0" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white text-brand-dark text-sm px-4 py-3 rounded-xl border border-brand-accent/20 focus:outline-none focus:ring-2 focus:ring-brand-accent transition-all cursor-pointer w-full md:w-auto"
+                className="bg-white text-brand-dark text-sm px-4 py-2.5 sm:py-3 rounded-xl border border-brand-accent/20 focus:outline-none focus:ring-2 focus:ring-brand-accent transition-all cursor-pointer w-full md:w-auto"
               >
                 <option value="default">Ordenar: Padrão do PDF</option>
                 <option value="price-asc">Menor Preço para Maior</option>
@@ -371,16 +429,19 @@ export default function App() {
           </div>
 
           {/* Bottom row: Category filter list */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-            <span className="text-xs uppercase tracking-wider font-bold text-brand-dark/60 flex items-center gap-1 shrink-0 mr-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none scroll-smooth">
+            <span className="hidden sm:inline-flex text-xs uppercase tracking-wider font-bold text-brand-dark/60 items-center gap-1 shrink-0 mr-2">
               <Filter className="w-3 h-3" /> Categorias:
+            </span>
+            <span className="inline-flex sm:hidden text-brand-dark/60 shrink-0 mr-1">
+              <Filter className="w-3.5 h-3.5 text-brand-accent" />
             </span>
             <div className="flex gap-1.5 shrink-0">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`text-xs px-4 py-2 rounded-lg transition-all duration-300 font-medium cursor-pointer ${
+                  className={`text-xs px-3.5 py-2 rounded-xl transition-all duration-300 font-medium cursor-pointer touch-manipulation active:scale-95 ${
                     selectedCategory === cat
                       ? "bg-brand-accent text-white font-semibold shadow-sm"
                       : "bg-brand-accent/5 text-brand-dark hover:bg-brand-accent/15"
@@ -395,7 +456,7 @@ export default function App() {
 
         {/* Product Grid */}
         {sortedProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {sortedProducts.map((product) => {
               const isFav = favorites.includes(product.id);
               const inBagCount = cart.find(item => item.product.id === product.id)?.quantity || 0;
@@ -447,8 +508,8 @@ export default function App() {
                   </div>
 
                   {/* Text Details */}
-                  <div className="p-6 flex flex-col flex-grow">
-                    <h4 className="font-serif text-xl font-bold text-brand-dark group-hover:text-brand-accent transition-colors">
+                  <div className="p-5 sm:p-6 flex flex-col flex-grow">
+                    <h4 className="font-serif text-lg sm:text-xl font-bold text-brand-dark group-hover:text-brand-accent transition-colors">
                       {product.name}
                     </h4>
                     
@@ -457,17 +518,17 @@ export default function App() {
                     </p>
 
                     {/* Price and Add button section */}
-                    <div className="mt-auto pt-6 flex items-center justify-between border-t border-brand-accent/10">
+                    <div className="mt-4 sm:mt-auto pt-4 sm:pt-6 flex items-center justify-between border-t border-brand-accent/10">
                       <div>
                         <span className="text-[10px] uppercase tracking-wider text-brand-dark/50 font-bold block">Preço Especial</span>
-                        <span className="font-mono text-xl font-extrabold text-brand-green">
+                        <span className="font-mono text-lg sm:text-xl font-extrabold text-brand-green">
                           R$ {product.price.toFixed(2).replace(".", ",")}
                         </span>
                       </div>
 
                       <button
                         onClick={(e) => addToCart(product, e)}
-                        className="bg-brand-accent hover:bg-brand-dark text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-xs active:scale-95"
+                        className="bg-brand-accent hover:bg-brand-dark text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 touch-manipulation"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Adicionar
@@ -519,6 +580,44 @@ export default function App() {
         </div>
       </section>
 
+      {/* Interactive CTA Section: Contact & Socials at the end of the page */}
+      <section className="max-w-7xl mx-auto px-4 mt-12 mb-4" id="section-saber-mais-socials">
+        <div className="bg-brand-accent/5 rounded-3xl p-6 sm:p-10 border border-brand-accent/15 text-center flex flex-col items-center max-w-3xl mx-auto">
+          <Sparkles className="w-8 h-8 text-brand-accent mb-4 animate-pulse" />
+          <h4 className="font-serif text-2xl sm:text-3xl font-extrabold text-brand-dark mb-2">
+            Gostou das peças ou quer tirar dúvidas?
+          </h4>
+          <p className="text-brand-dark/70 text-sm sm:text-base leading-relaxed mb-6 max-w-lg">
+            Estamos prontos para atender você! Clique nos botões abaixo para falar conosco diretamente no WhatsApp ou nos acompanhar no Instagram.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+            {/* WhatsApp - Saber mais */}
+            <a
+              href={`https://api.whatsapp.com/send?phone=${PHONE_NUMBER}&text=Olá! Gostaria de saber mais sobre as peças em madeira pinus.`}
+              target="_blank"
+              rel="noreferrer"
+              className="bg-brand-green hover:bg-brand-dark text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer active:scale-95 touch-manipulation text-sm sm:text-base flex-1 sm:flex-initial"
+              id="cta-whatsapp-saber-mais"
+            >
+              <MessageCircle className="w-5 h-5 fill-white text-brand-green" />
+              Saber Mais (WhatsApp)
+            </a>
+
+            {/* Instagram - Ver Instagram */}
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="bg-white hover:bg-brand-accent hover:text-white text-brand-dark font-bold py-3.5 px-6 rounded-2xl border border-brand-accent/20 hover:border-brand-accent shadow-xs transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer active:scale-95 touch-manipulation text-sm sm:text-base flex-1 sm:flex-initial"
+              id="cta-instagram-ver"
+            >
+              <Instagram className="w-5 h-5 text-pink-600" />
+              Ver Instagram
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Footer Details */}
       <footer className="border-t border-brand-accent/15 mt-24 pt-16 bg-brand-light/20">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -533,22 +632,26 @@ export default function App() {
             <p className="text-brand-dark/70 text-sm leading-relaxed max-w-sm">
               Criamos móveis e utilitários que trazem afeto, autenticidade e praticidade para sua casa, unindo design rústico ao cuidado artesanal da madeira de reflorestamento.
             </p>
-            <div className="flex items-center gap-3 mt-6">
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+              <a 
+                href={`https://api.whatsapp.com/send?phone=${PHONE_NUMBER}&text=Olá! Gostaria de saber mais sobre as peças em madeira.`} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="bg-brand-green hover:bg-brand-dark text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 justify-center shadow-md active:scale-95 touch-manipulation cursor-pointer"
+                id="footer-whatsapp-saber-mais"
+              >
+                <MessageCircle className="w-4 h-4 fill-white text-brand-green" />
+                Saber Mais (WhatsApp)
+              </a>
               <a 
                 href={INSTAGRAM_URL} 
                 target="_blank" 
                 rel="noreferrer" 
-                className="bg-brand-accent/10 hover:bg-brand-accent text-brand-accent hover:text-white p-2.5 rounded-full transition-all duration-300"
+                className="bg-white hover:bg-brand-accent hover:text-white text-brand-dark text-xs font-bold px-4 py-2.5 rounded-xl border border-brand-accent/20 hover:border-brand-accent transition-all duration-300 flex items-center gap-2 justify-center shadow-xs active:scale-95 touch-manipulation cursor-pointer"
+                id="footer-instagram-ver"
               >
-                <Instagram className="w-4 h-4" />
-              </a>
-              <a 
-                href={`https://api.whatsapp.com/send?phone=${PHONE_NUMBER}`} 
-                target="_blank" 
-                rel="noreferrer" 
-                className="bg-brand-accent/10 hover:bg-brand-accent text-brand-accent hover:text-white p-2.5 rounded-full transition-all duration-300"
-              >
-                <MessageCircle className="w-4 h-4" />
+                <Instagram className="w-4 h-4 text-pink-600" />
+                Ver Instagram
               </a>
             </div>
           </div>
@@ -604,7 +707,7 @@ export default function App() {
       {/* PRODUCT DETAIL DIALOG / MODAL */}
       <AnimatePresence>
         {selectedProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 animate-fade-in">
             
             {/* Backdrop */}
             <motion.div
@@ -621,18 +724,37 @@ export default function App() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ type: "spring", duration: 0.5 }}
-              className="bg-brand-light text-brand-dark w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-y-auto shadow-2xl relative z-10 border border-brand-accent/20"
+              className="bg-brand-light text-brand-dark w-full h-full md:h-auto max-w-4xl max-h-[100vh] md:max-h-[90vh] rounded-none md:rounded-3xl overflow-y-auto shadow-2xl relative z-10 border-0 md:border border-brand-accent/20 flex flex-col"
               id="product-detail-modal"
             >
-              {/* Close Button */}
+              {/* Desktop Close Button */}
               <button
                 onClick={() => setSelectedProduct(null)}
-                className="absolute top-4 right-4 bg-brand-dark/10 hover:bg-brand-dark/20 text-brand-dark p-2.5 rounded-full z-20 transition-all cursor-pointer"
+                className="hidden md:flex absolute top-4 right-4 bg-white/90 backdrop-blur-xs text-brand-dark p-2.5 rounded-full z-20 shadow-md border border-brand-accent/10 hover:bg-brand-light transition-all cursor-pointer"
+                title="Fechar"
               >
                 <X className="w-4 h-4" />
               </button>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+              {/* Mobile Back Button with ArrowLeft */}
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="md:hidden absolute top-4 left-4 bg-white/95 backdrop-blur-xs text-brand-dark px-3.5 py-1.5 rounded-full z-20 shadow-md border border-brand-accent/10 flex items-center gap-1 text-xs font-semibold cursor-pointer active:scale-95 touch-manipulation"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-brand-accent" />
+                <span>Voltar</span>
+              </button>
+
+              {/* Mobile Close Button (Alternative top-right option) */}
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="md:hidden absolute top-4 right-4 bg-white/95 backdrop-blur-xs text-brand-dark p-2 rounded-full z-20 shadow-md border border-brand-accent/10 cursor-pointer active:scale-95 touch-manipulation"
+                title="Fechar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1">
                 {/* Product Image Panel */}
                 <div className="bg-brand-accent/5 relative aspect-square md:aspect-auto md:min-h-[450px]">
                   <img
@@ -641,39 +763,40 @@ export default function App() {
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
                   />
-                  <span className="absolute top-4 left-4 bg-brand-accent text-white text-xs uppercase tracking-wider font-semibold px-3 py-1 rounded-full shadow-sm">
+                  {/* repocition category badge to avoid overlay on mobile back button */}
+                  <span className="absolute top-4 left-[95px] md:left-4 bg-brand-accent text-white text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1.5 rounded-full shadow-sm">
                     {selectedProduct.category}
                   </span>
                 </div>
 
                 {/* Text specifications panel */}
-                <div className="p-8 md:p-10 flex flex-col justify-between">
+                <div className="p-5 sm:p-8 md:p-10 flex flex-col justify-between">
                   <div>
                     {/* Header tags */}
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-mono text-brand-accent/80 font-bold uppercase">Produto Oficial de Pinus</span>
                       {favorites.includes(selectedProduct.id) && (
                         <span className="text-xs text-red-500 font-semibold flex items-center gap-1">
-                          <Heart className="w-3.5 h-3.5 fill-red-500" /> Salvo nos Favoritos
+                          <Heart className="w-3.5 h-3.5 fill-red-500 animate-pulse" /> Salvo
                         </span>
                       )}
                     </div>
 
-                    <h3 className="font-serif text-3xl md:text-4xl font-extrabold text-brand-dark">
+                    <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl font-extrabold text-brand-dark">
                       {selectedProduct.name}
                     </h3>
 
                     {/* Price tag */}
-                    <p className="font-mono text-2xl font-black text-brand-green mt-3 mb-6">
+                    <p className="font-mono text-xl sm:text-2xl font-black text-brand-green mt-2 mb-4">
                       R$ {selectedProduct.price.toFixed(2).replace(".", ",")}
                     </p>
 
-                    <p className="text-brand-dark/80 text-sm leading-relaxed mb-6">
+                    <p className="text-brand-dark/80 text-sm leading-relaxed mb-4 md:mb-6">
                       {selectedProduct.description}
                     </p>
 
                     {/* Dimensions & Features checklist */}
-                    <div className="space-y-4 mb-8">
+                    <div className="space-y-3 mb-6 md:mb-8">
                       {selectedProduct.dimensions && (
                         <div className="bg-brand-accent/5 p-3 rounded-xl border border-brand-accent/15 flex items-center justify-between">
                           <span className="text-xs font-bold uppercase tracking-wider text-brand-dark/60">Dimensões Médias:</span>
@@ -683,10 +806,10 @@ export default function App() {
 
                       <div>
                         <h5 className="text-xs uppercase tracking-wider font-bold text-brand-dark/50 mb-2">Destaques da Peça:</h5>
-                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-brand-dark/80">
+                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-brand-dark/80">
                           {selectedProduct.features.map((feat, index) => (
                             <li key={index} className="flex items-center gap-1.5">
-                              <Check className="w-3.5 h-3.5 text-brand-green" />
+                              <Check className="w-3.5 h-3.5 text-brand-green shrink-0" />
                               <span>{feat}</span>
                             </li>
                           ))}
@@ -696,21 +819,21 @@ export default function App() {
                   </div>
 
                   {/* Actions Bar */}
-                  <div className="flex gap-4 pt-6 border-t border-brand-accent/10">
+                  <div className="flex gap-4 pt-4 md:pt-6 border-t border-brand-accent/10 mt-auto">
                     <button
                       onClick={() => {
                         addToCart(selectedProduct);
                         setSelectedProduct(null);
                       }}
-                      className="bg-brand-accent hover:bg-brand-dark text-white font-bold py-3.5 px-6 rounded-xl transition-all duration-300 flex-grow flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-95"
+                      className="bg-brand-accent hover:bg-brand-dark text-white font-bold py-3 sm:py-3.5 px-4 sm:px-6 rounded-xl transition-all duration-300 flex-grow flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-95 touch-manipulation text-sm"
                     >
                       <Plus className="w-4 h-4" />
-                      Adicionar ao Carrinho de Compras
+                      Adicionar ao Carrinho <span className="hidden xs:inline">de Compras</span>
                     </button>
                     
                     <button
                       onClick={(e) => toggleFavorite(selectedProduct.id, e)}
-                      className="bg-brand-light border border-brand-accent/30 hover:bg-brand-accent/10 text-brand-dark p-3.5 rounded-xl transition-all duration-300 cursor-pointer"
+                      className="bg-brand-light border border-brand-accent/30 hover:bg-brand-accent/10 text-brand-dark p-3 sm:p-3.5 rounded-xl transition-all duration-300 cursor-pointer touch-manipulation active:scale-95"
                       title="Salvar nos Favoritos"
                     >
                       <Heart className={`w-5 h-5 ${favorites.includes(selectedProduct.id) ? "text-red-500 fill-red-500" : ""}`} />
@@ -760,66 +883,190 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Items List inside Drawer */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* Items List & Form inside Scrollable Drawer Area */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
                   {cart.length > 0 ? (
                     <>
-                      <div className="text-xs text-brand-dark/60 bg-brand-accent/5 p-3 rounded-xl border border-brand-accent/10 flex items-start gap-2">
-                        <Info className="w-4 h-4 text-brand-accent shrink-0 mt-0.5" />
-                        <span>Gerencie os produtos no seu carrinho. Ao finalizar, clique em enviar para enviar seu pedido diretamente ao WhatsApp da loja.</span>
-                      </div>
-                      
-                      {cart.map((item) => (
-                        <div 
-                          key={item.product.id}
-                          className="flex gap-3 bg-white p-3.5 rounded-xl border border-brand-accent/10 shadow-xs group/item transition-all"
-                        >
-                          <img
-                            src={item.product.image}
-                            alt={item.product.name}
-                            referrerPolicy="no-referrer"
-                            className="w-16 h-16 rounded-lg object-cover bg-brand-accent/5 shrink-0"
-                          />
-                          
-                          <div className="flex-grow min-w-0">
-                            <h5 className="font-serif text-sm font-bold truncate text-brand-dark">
-                              {item.product.name}
-                            </h5>
-                            <p className="font-mono text-xs font-semibold text-brand-green mt-0.5">
-                              R$ {item.product.price.toFixed(2).replace(".", ",")}
-                            </p>
+                      {/* Products list header */}
+                      <div className="space-y-4">
+                        <div className="text-xs text-brand-dark/60 bg-brand-accent/5 p-3 rounded-xl border border-brand-accent/10 flex items-start gap-2">
+                          <Info className="w-4 h-4 text-brand-accent shrink-0 mt-0.5" />
+                          <span>Gerencie os produtos no seu carrinho. Ao finalizar, clique em enviar para enviar seu pedido diretamente ao WhatsApp da loja.</span>
+                        </div>
+                        
+                        {cart.map((item) => (
+                          <div 
+                            key={item.product.id}
+                            className="flex gap-3 bg-white p-3.5 rounded-xl border border-brand-accent/10 shadow-xs group/item transition-all"
+                          >
+                            <img
+                              src={item.product.image}
+                              alt={item.product.name}
+                              referrerPolicy="no-referrer"
+                              className="w-16 h-16 rounded-lg object-cover bg-brand-accent/5 shrink-0"
+                            />
+                            
+                            <div className="flex-grow min-w-0">
+                              <h5 className="font-serif text-sm font-bold truncate text-brand-dark">
+                                {item.product.name}
+                              </h5>
+                              <p className="font-mono text-xs font-semibold text-brand-green mt-0.5">
+                                R$ {item.product.price.toFixed(2).replace(".", ",")}
+                              </p>
 
-                            {/* Quantity Controls */}
-                            <div className="flex items-center justify-between mt-2">
-                              <div className="flex items-center gap-1.5 bg-brand-light border border-brand-accent/15 px-2 py-1 rounded-lg">
+                              {/* Quantity Controls */}
+                              <div className="flex items-center justify-between mt-2">
+                                <div className="flex items-center gap-1.5 bg-brand-light border border-brand-accent/15 px-2 py-1 rounded-lg">
+                                  <button
+                                    onClick={() => updateQuantity(item.product.id, -1)}
+                                    className="text-brand-dark/70 hover:text-brand-dark p-0.5 transition-colors cursor-pointer"
+                                    title="Diminuir"
+                                  >
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </button>
+                                  <span className="font-mono text-xs font-bold w-5 text-center">{item.quantity}</span>
+                                  <button
+                                    onClick={() => updateQuantity(item.product.id, 1)}
+                                    className="text-brand-dark/70 hover:text-brand-dark p-0.5 transition-colors cursor-pointer"
+                                    title="Aumentar"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+
                                 <button
-                                  onClick={() => updateQuantity(item.product.id, -1)}
-                                  className="text-brand-dark/70 hover:text-brand-dark p-0.5 transition-colors cursor-pointer"
-                                  title="Diminuir"
+                                  onClick={() => removeFromCart(item.product.id)}
+                                  className="text-red-400 hover:text-red-600 p-1.5 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
+                                  title="Remover item"
                                 >
-                                  <Minus className="w-3.5 h-3.5" />
-                                </button>
-                                <span className="font-mono text-xs font-bold w-5 text-center">{item.quantity}</span>
-                                <button
-                                  onClick={() => updateQuantity(item.product.id, 1)}
-                                  className="text-brand-dark/70 hover:text-brand-dark p-0.5 transition-colors cursor-pointer"
-                                  title="Aumentar"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
-
-                              <button
-                                onClick={() => removeFromCart(item.product.id)}
-                                className="text-red-400 hover:text-red-600 p-1.5 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
-                                title="Remover item"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
                             </div>
                           </div>
+                        ))}
+                      </div>
+
+                      {/* Customer Information & Delivery Form Section */}
+                      <div className="space-y-4 border-t border-brand-accent/10 pt-6">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 bg-brand-accent rounded-full animate-ping"></span>
+                          <h4 className="text-xs uppercase tracking-wider font-bold text-brand-dark/70">Dados de Contato e Entrega</h4>
                         </div>
-                      ))}
+                        
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-brand-dark/60 mb-1">Seu Nome</label>
+                          <input
+                            type="text"
+                            placeholder="Ex: João da Silva"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            className="w-full bg-white text-brand-dark text-xs px-3.5 py-2.5 rounded-lg border border-brand-accent/20 focus:outline-none focus:ring-1 focus:ring-brand-accent"
+                          />
+                        </div>
+
+                        {/* Delivery selector */}
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-brand-dark/60 mb-1.5">Como quer receber?</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => setDeliveryOption("retirada")}
+                              className={`text-xs py-2 rounded-lg font-medium border cursor-pointer transition-all ${
+                                deliveryOption === "retirada"
+                                  ? "bg-brand-accent text-white border-brand-accent font-semibold shadow-xs"
+                                  : "bg-white text-brand-dark border-brand-accent/20 hover:bg-brand-accent/5"
+                              }`}
+                            >
+                              🏪 Retirada no Ateliê
+                            </button>
+                            <button
+                              onClick={() => setDeliveryOption("entrega")}
+                              className={`text-xs py-2 rounded-lg font-medium border cursor-pointer transition-all ${
+                                deliveryOption === "entrega"
+                                  ? "bg-brand-accent text-white border-brand-accent font-semibold shadow-xs"
+                                  : "bg-white text-brand-dark border-brand-accent/20 hover:bg-brand-accent/5"
+                              }`}
+                            >
+                              🚚 Entrega
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Delivery Address (only shown if delivery chosen) */}
+                        {deliveryOption === "entrega" && (
+                          <div className="animate-fade-in space-y-3.5">
+                            {/* CEP Field */}
+                            <div>
+                              <label className="block text-[10px] uppercase font-bold text-brand-dark/60 mb-1">CEP de Entrega</label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="00000-000"
+                                  value={cep}
+                                  onChange={handleCepChange}
+                                  className="w-full bg-white text-brand-dark text-xs px-3.5 py-2.5 rounded-lg border border-brand-accent/20 focus:outline-none focus:ring-1 focus:ring-brand-accent font-mono"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleCepSearch(cep)}
+                                  disabled={cepLoading}
+                                  className="bg-brand-accent hover:bg-brand-dark text-white text-xs font-bold px-4 rounded-lg flex items-center justify-center transition-colors shrink-0 disabled:bg-brand-accent/50 cursor-pointer"
+                                >
+                                  {cepLoading ? "Buscando..." : "Buscar"}
+                                </button>
+                              </div>
+                              {cepError && (
+                                <p className="text-[10px] text-red-500 mt-1 font-medium">{cepError}</p>
+                              )}
+                            </div>
+
+                            {/* Delivery Warning Banner */}
+                            <div className="bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded-lg flex items-start gap-1.5">
+                              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                              <div className="text-[10px] leading-relaxed font-medium">
+                                <strong className="block text-amber-900">Atenção sobre a Entrega:</strong>
+                                O valor da entrega (frete) é calculado à parte e será combinado diretamente pelo WhatsApp.
+                              </div>
+                            </div>
+
+                            {/* Delivery Address Textarea */}
+                            <div>
+                              <label className="block text-[10px] uppercase font-bold text-brand-dark/60 mb-1">Endereço de Entrega</label>
+                              <textarea
+                                placeholder="Rua, Bairro, Cidade..."
+                                value={deliveryAddress}
+                                onChange={(e) => setDeliveryAddress(e.target.value)}
+                                rows={2}
+                                className="w-full bg-white text-brand-dark text-xs px-3.5 py-2.5 rounded-lg border border-brand-accent/20 focus:outline-none focus:ring-1 focus:ring-brand-accent resize-none"
+                              />
+                            </div>
+
+                            {/* House Number and Complement Fields */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[10px] uppercase font-bold text-brand-dark/60 mb-1">Número</label>
+                                <input
+                                  type="text"
+                                  placeholder="Ex: 123"
+                                  value={houseNumber}
+                                  onChange={(e) => setHouseNumber(e.target.value)}
+                                  className="w-full bg-white text-brand-dark text-xs px-3.5 py-2.5 rounded-lg border border-brand-accent/20 focus:outline-none focus:ring-1 focus:ring-brand-accent"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] uppercase font-bold text-brand-dark/60 mb-1">Complemento</label>
+                                <input
+                                  type="text"
+                                  placeholder="Ex: Apto 42"
+                                  value={complement}
+                                  onChange={(e) => setComplement(e.target.value)}
+                                  className="w-full bg-white text-brand-dark text-xs px-3.5 py-2.5 rounded-lg border border-brand-accent/20 focus:outline-none focus:ring-1 focus:ring-brand-accent"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </>
                   ) : (
                     <div className="text-center py-20">
@@ -838,66 +1085,9 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Footer Section of Drawer (Form + Total & Checkout) */}
+                {/* Footer Section of Drawer (Total & Checkout only - always visible CTA) */}
                 {cart.length > 0 && (
                   <div className="p-6 border-t border-brand-accent/10 bg-brand-light sticky bottom-0 z-10 shadow-[0_-8px_24px_-4px_rgba(0,0,0,0.05)]">
-                    {/* Customer Information Form */}
-                    <div className="space-y-3.5 mb-5">
-                      <h4 className="text-xs uppercase tracking-wider font-bold text-brand-dark/70 border-b border-brand-accent/10 pb-1.5">Dados de Contato</h4>
-                      
-                      <div>
-                        <label className="block text-[10px] uppercase font-bold text-brand-dark/60 mb-1">Seu Nome</label>
-                        <input
-                          type="text"
-                          placeholder="Ex: João da Silva"
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full bg-white text-brand-dark text-xs px-3.5 py-2.5 rounded-lg border border-brand-accent/20 focus:outline-none focus:ring-1 focus:ring-brand-accent"
-                        />
-                      </div>
-
-                      {/* Delivery selector */}
-                      <div>
-                        <label className="block text-[10px] uppercase font-bold text-brand-dark/60 mb-1.5">Como quer receber?</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            onClick={() => setDeliveryOption("retirada")}
-                            className={`text-xs py-2 rounded-lg font-medium border cursor-pointer transition-all ${
-                              deliveryOption === "retirada"
-                                ? "bg-brand-accent text-white border-brand-accent font-semibold"
-                                : "bg-white text-brand-dark border-brand-accent/20 hover:bg-brand-accent/5"
-                            }`}
-                          >
-                            🏪 Retirada no Ateliê
-                          </button>
-                          <button
-                            onClick={() => setDeliveryOption("entrega")}
-                            className={`text-xs py-2 rounded-lg font-medium border cursor-pointer transition-all ${
-                              deliveryOption === "entrega"
-                                ? "bg-brand-accent text-white border-brand-accent font-semibold"
-                                : "bg-white text-brand-dark border-brand-accent/20 hover:bg-brand-accent/5"
-                            }`}
-                          >
-                            🚚 Entrega em SP
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Delivery Address (only shown if delivery chosen) */}
-                      {deliveryOption === "entrega" && (
-                        <div className="animate-fade-in">
-                          <label className="block text-[10px] uppercase font-bold text-brand-dark/60 mb-1">Endereço de Entrega</label>
-                          <textarea
-                            placeholder="Rua, Número, Bairro, Cidade..."
-                            value={deliveryAddress}
-                            onChange={(e) => setDeliveryAddress(e.target.value)}
-                            rows={2}
-                            className="w-full bg-white text-brand-dark text-xs px-3.5 py-2.5 rounded-lg border border-brand-accent/20 focus:outline-none focus:ring-1 focus:ring-brand-accent resize-none"
-                          />
-                        </div>
-                      )}
-                    </div>
-
                     {/* Total Summary */}
                     <div className="flex items-center justify-between mb-5 bg-brand-green/5 p-3 rounded-xl border border-brand-green/10">
                       <div>
